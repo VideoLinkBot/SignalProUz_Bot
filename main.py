@@ -1,7 +1,7 @@
 import os
 import requests
 from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 # Tokenni Render Environment Variables dan olish
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -12,13 +12,6 @@ main_menu = ReplyKeyboardMarkup(
      ["📊 Signal olish"]],
     resize_keyboard=True
 )
-
-# Bayroqlar lug‘ati
-flags = {
-    "USD": "🇺🇸", "EUR": "🇪🇺", "RUB": "🇷🇺", "KZT": "🇰🇿", "TRY": "🇹🇷",
-    "AED": "🇦🇪", "CNY": "🇨🇳", "KRW": "🇰🇷", "JPY": "🇯🇵", "GBP": "🇬🇧",
-    "CHF": "🇨🇭", "SEK": "🇸🇪", "NOK": "🇳🇴", "DKK": "🇩🇰", "PLN": "🇵🇱"
-}
 
 # Start komandasi
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -34,19 +27,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-# Valyuta kurslari (15 ta asosiy)
+# Valyuta kurslari
 async def valyuta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         url = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
         data = requests.get(url).json()
 
-        kerakli = list(flags.keys())
+        kurslar = {
+            "USD": "🇺🇸 Dollar",
+            "EUR": "🇪🇺 Yevro",
+            "RUB": "🇷🇺 Rubl",
+            "GBP": "🇬🇧 Funt",
+            "CNY": "🇨🇳 Yuan",
+            "JPY": "🇯🇵 Yen",
+            "KZT": "🇰🇿 Tenge",
+            "KGS": "🇰🇬 Som",
+            "TRY": "🇹🇷 Lira",
+            "AED": "🇦🇪 Dirham",
+            "SAR": "🇸🇦 Riyal",
+            "INR": "🇮🇳 Rupiya",
+            "SGD": "🇸🇬 Singapur dollari",
+            "KRW": "🇰🇷 Von",
+            "CHF": "🇨🇭 Frank"
+        }
 
-        msg = "💵 *Bugungi valyuta kurslari:*\n\n"
-        for val in data:
-            if val["Ccy"] in kerakli:
-                flag = flags.get(val["Ccy"], "")
-                msg += f"{flag} {val['CcyNm_UZ']} ({val['Ccy']}): {val['Rate']} so‘m\n"
+        msg = "💱 *Valyuta kurslari:*\n\n"
+        for code, name in kurslar.items():
+            item = next((i for i in data if i["Ccy"] == code), None)
+            if item:
+                msg += f"{name} = {item['Rate']} so‘m\n"
 
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception:
@@ -88,6 +97,11 @@ def main():
     app.add_handler(CommandHandler("valyuta", valyuta))
     app.add_handler(CommandHandler("oltin", oltin))
     app.add_handler(CommandHandler("signal", signal))
+
+    # Tugmalar uchun MessageHandler
+    app.add_handler(MessageHandler(filters.Text("💵 Valyuta kurslari"), valyuta))
+    app.add_handler(MessageHandler(filters.Text("🥇 Oltin kursi"), oltin))
+    app.add_handler(MessageHandler(filters.Text("📊 Signal olish"), signal))
 
     print("✅ Bot ishga tushdi...")
     app.run_polling()
