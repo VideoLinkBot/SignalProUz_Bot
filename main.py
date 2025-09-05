@@ -13,6 +13,13 @@ main_menu = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
+# Bayroqlar lug‘ati
+flags = {
+    "USD": "🇺🇸", "EUR": "🇪🇺", "RUB": "🇷🇺", "KZT": "🇰🇿", "TRY": "🇹🇷",
+    "AED": "🇦🇪", "CNY": "🇨🇳", "KRW": "🇰🇷", "JPY": "🇯🇵", "GBP": "🇬🇧",
+    "CHF": "🇨🇭", "SEK": "🇸🇪", "NOK": "🇳🇴", "DKK": "🇩🇰", "PLN": "🇵🇱"
+}
+
 # Start komandasi
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -27,22 +34,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-# Valyuta kurslari
+# Valyuta kurslari (15 ta asosiy)
 async def valyuta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         url = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
         data = requests.get(url).json()
 
-        usd = next(item for item in data if item["Ccy"] == "USD")
-        eur = next(item for item in data if item["Ccy"] == "EUR")
-        rub = next(item for item in data if item["Ccy"] == "RUB")
+        kerakli = list(flags.keys())
 
-        msg = (
-            f"💵 *Valyuta kurslari* ({usd['Date']}):\n\n"
-            f"🇺🇸 1 USD = {usd['Rate']} so‘m\n"
-            f"🇪🇺 1 EUR = {eur['Rate']} so‘m\n"
-            f"🇷🇺 1 RUB = {rub['Rate']} so‘m"
-        )
+        msg = "💵 *Bugungi valyuta kurslari:*\n\n"
+        for val in data:
+            if val["Ccy"] in kerakli:
+                flag = flags.get(val["Ccy"], "")
+                msg += f"{flag} {val['CcyNm_UZ']} ({val['Ccy']}): {val['Rate']} so‘m\n"
+
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception:
         await update.message.reply_text("❌ Kurslarni olishda xatolik. Keyinroq urinib ko‘ring.")
