@@ -31,7 +31,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def valyuta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         url = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
-        data = requests.get(url).json()
+        data = requests.get(url, timeout=10).json()
 
         kurslar = {
             "USD": "🇺🇸 Dollar",
@@ -61,20 +61,31 @@ async def valyuta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("❌ Kurslarni olishda xatolik. Keyinroq urinib ko‘ring.")
 
-# Oltin kursi
+# Oltin kursi (ishlaydigan va xatoliklarni oldini oladi)
 async def oltin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         url = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
-        data = requests.get(url).json()
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
 
-        xau = next(item for item in data if item["Ccy"] == "XAU")
-        msg = (
-            f"🥇 *Oltin kursi* ({xau['Date']}):\n\n"
-            f"1 gramm oltin = {xau['Rate']} so‘m"
-        )
+        # Oltin kursini qidirish
+        xau = next((item for item in data if item.get("Ccy") == "XAU"), None)
+
+        if xau:
+            msg = (
+                f"🥇 *Oltin kursi* ({xau['Date']}):\n\n"
+                f"1 gramm oltin = {xau['Rate']} so‘m"
+            )
+        else:
+            msg = "❌ Bugun oltin kursi mavjud emas."
+
         await update.message.reply_text(msg, parse_mode="Markdown")
-    except Exception:
-        await update.message.reply_text("❌ Oltin kursini olishda xatolik.")
+
+    except requests.exceptions.RequestException as e:
+        await update.message.reply_text(f"❌ Kursni olishda xatolik:\n{e}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Kutilmagan xatolik:\n{e}")
 
 # Signal yuborish
 async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
